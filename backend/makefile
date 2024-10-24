@@ -1,8 +1,8 @@
 .PHONY: up ac dac
-include .env
+# include ../.env
 
 # サーバー立ち上げ
-up:
+run:
 	uvicorn main:app --reload
 
 # 仮想環境有効化
@@ -23,3 +23,13 @@ apitest:
 		"messages": [{"role": "user", "content": "Say this is a test!"}],
 		"temperature": 0.7
 		}'
+
+# docker コンテナ ビルド
+dockerbuild:
+	docker build -t backend-jphacks2024 .
+
+# dockerコンテナ立ち上げテスト(単体)
+up:
+	docker run --publish 8000:8000 --name backend-jphacks2024 --rm backend-jphacks2024
+
+	
