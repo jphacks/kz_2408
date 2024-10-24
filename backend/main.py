@@ -9,11 +9,14 @@ app = FastAPI()
 dialect = "postgresql"
 driver = "default"
 username = "psql"
+password = "psql"
 host = "localhost"
 port = "5432"
 database = "psql"
 charset_type = "utf8"
-engine = create_engine(f"{dialect}+{driver}://{username}:{}")
+engine = create_engine(
+    f"{dialect}+{driver}://{username}:{password}@{host}:{port}/{database}?charset={charset_type}"
+)
 
 
 @app.get("/")
