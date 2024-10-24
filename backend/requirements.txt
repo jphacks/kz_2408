@@ -1,4 +1,11 @@
+# fastapi & dependencis
 fastapi
 uvicorn
 starlette
 pydantic
+# chatgpt library
+openai
+# sqlalchemy db orm
+sqlalchemy
+# .envから環境変数読み込み
+python-dotenv
