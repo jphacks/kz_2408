@@ -9,3 +9,5 @@ openai
 sqlalchemy
 # .envから環境変数読み込み
 python-dotenv
+# poregresql library
+psycopg2-binary
