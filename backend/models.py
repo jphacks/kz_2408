@@ -1,15 +1,23 @@
-from pydantic import BaseModel
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy.orm import relationship
+from database import Base
 
 
-class User(BaseModel):
-    """ユーザーを扱うオブジェクト
+class User(Base):
+    """Userテーブルのモデルクラス
 
     Args:
-        BaseModel (_type_): _description_
+        Base (_type_): _description_
     """
 
-    id: int  # Id
-    name: str  # 名前
-    self_introduction: float  # 自己紹介
-    params_json: str  # パラメータ
-    is_compile: bool = None  # json parameter にコンパイルされたかどうか
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    self_introduction = Column(Text)
+    # self_introduction = Column(String)
+
+    params_json = Column(JSON)
+
+    # json parameter にコンパイルされたかどうか
+    is_compile = Column(Boolean, default=False)
