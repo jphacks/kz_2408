@@ -3,7 +3,8 @@
 
 # サーバー立ち上げ
 run:
-	uvicorn main:app --reload
+	# uvicorn main:app --reload
+	uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # 仮想環境有効化
 ac:
