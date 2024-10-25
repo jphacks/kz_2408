@@ -27,7 +27,7 @@ apitest:
 
 # docker コンテナ ビルド
 dockerbuild:
-	docker build -t backend-jphacks2024 .
+	docker build -t jphacks2024-kz-2408-backend .
 
 # dockerコンテナ立ち上げテスト(単体)
 up:
