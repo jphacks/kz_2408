@@ -12,13 +12,13 @@ services:
       - ./.env
 
   # backend
-  backend:
-    build: ./backend
-    container_name: backend
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
+  # backend:
+  #   build: ./backend
+  #   container_name: backend
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - db
 
   # フロントエンド : frontend
   # frontend:
