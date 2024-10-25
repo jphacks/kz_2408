@@ -20,4 +20,4 @@ class User(Base):
     params_json = Column(JSON)
 
     # json parameter にコンパイルされたかどうか
-    is_compile = Column(Boolean, default=False)
+    is_compiled = Column(Boolean, default=False)
