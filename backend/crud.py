@@ -8,10 +8,10 @@ import json
 
 
 # CREATE
-def create_json_params(db: Session, self_introduction: str):
+def create_json_params(db: Session, self_introduction: str, client):
     # gptのAPI呼び出し
     params_json = openai_api.convert2params_json(
-        self_introduction
+        self_introduction, client
     )  # params_jsonに自己紹介文から得られたパラメータが入る
     q = text(
         "insert into users (self_introduction,params_json,is_compiled) values (:self_introduction, :params, :is_compiled)"
@@ -52,9 +52,9 @@ def read_json_params(db: Session, user_id: int):
 
 
 # UPDATE
-def update_json_params(user_id: int, db: Session, self_introduction: str):
+def update_json_params(user_id: int, client, db: Session, self_introduction: str):
     # gptの呼び出し
-    params_json = openai_api.convert2params_json(self_introduction)
+    params_json = openai_api.convert2params_json(self_introduction, client)
     q = text(
         # "insert into users (self_introduction, params_json, is_compiled) values (:self_introduction, :params, :is_compiled)"
         "update users set self_introduction = :self_introduction, params_json = :params, is_compiled = :is_compiled where id = :user_id"
