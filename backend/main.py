@@ -8,6 +8,17 @@ import schemas
 from database import SessionLocal, engine
 from fastapi.middleware.cors import CORSMiddleware
 
+# openai
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
+from os.path import join, dirname
+
+load_dotenv()  # .envから環境変数に読み出し
+
+
+client = OpenAI()
+
 app = FastAPI()
 
 
@@ -48,9 +59,10 @@ def get():
 # CREATE
 @app.post("/users/params")
 def create_params_json(
-    body: schemas.RequestBodySelfIntroduction, db: Session = Depends(get_db)
+    body: schemas.RequestBodySelfIntroduction,
+    db: Session = Depends(get_db),
 ):
-    params_json = crud.create_json_params(db, body.self_introduction)
+    params_json = crud.create_json_params(db, body.self_introduction, client)
     return params_json
 
 
@@ -68,7 +80,7 @@ def put_params_json(
     body: schemas.RequestBodySelfIntroduction,
     db: Session = Depends(get_db),
 ):
-    params_json = crud.update_json_params(user_id, db, body.self_introduction)
+    params_json = crud.update_json_params(user_id, client, db, body.self_introduction)
     return params_json
 
 
