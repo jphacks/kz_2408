@@ -11,48 +11,24 @@ services:
     env_file:
       - ./.env
 
-  # DBの金庫 : Vault
-  vault:
-    build: ./Vault
-    container_name: vault
+  # backend
+  # backend:
+  #   build: ./backend
+  #   container_name: backend
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - db
 
-    ports:
-      - "3004:3004"
-    
-    depends_on:
-      - db
-
-  # 状態提供 : socket-condition-provider
-  socket-condition-provider:
-    build: ./socket-condition-provider
-    container_name: socket-condition-provider
-    ports:
-      - "3001:3001"
-    depends_on:
-      - db
-      - vault
-
-  # 過去の混雑状況データ提供 : log-provider
-  log-provider:
-    build: ./log-provider
-    container_name: log-provider
-    ports:
-      - "3003:3003"
-    depends_on:
-      - db
-      - vault
-
-  # フロントエンド : condition-presenter
-  condition-presenter:
-    build: ./condition-presenter
-    container_name: condition-presenter
-    ports:
-      - "3000:3000"
-    depends_on:
-      - socket-condition-provider
-      - log-provider
-
-    
+  # フロントエンド : frontend
+  # frontend:
+  #   build: ./frontend
+  #   container_name: frontend
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - db
+  #     - backend
 
 
 volumes:
