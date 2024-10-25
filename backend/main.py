@@ -68,7 +68,7 @@ def put_params_json(
     body: schemas.RequestBodySelfIntroduction,
     db: Session = Depends(get_db),
 ):
-    params_json = crud.update_json_params(db, body.self_introduction)
+    params_json = crud.update_json_params(user_id, db, body.self_introduction)
     return params_json
 
 
