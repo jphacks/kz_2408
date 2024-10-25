@@ -26,3 +26,6 @@ login:
 
 dbattach:
 	docker compose logs -f db
+
+backendattach:
+	docker compose logs -f backend
