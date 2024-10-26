@@ -11,3 +11,6 @@ sqlalchemy
 python-dotenv
 # poregresql library
 psycopg2-binary
+# formatter
+isort
+black
