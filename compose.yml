@@ -17,6 +17,9 @@ services:
     container_name: backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./.env:/code/.env
+
     depends_on:
       - db
 
