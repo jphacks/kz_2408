@@ -63,6 +63,7 @@ def create_params_json(
     db: Session = Depends(get_db),
 ):
     params_json = crud.create_json_params(db, body.self_introduction, client)
+    print(params_json,"this is printf degug")
     return params_json
 
 
@@ -89,3 +90,7 @@ def put_params_json(
 def delete_params_json(user_id: int, db: Session = Depends(get_db)):
     crud.delete_params_json(db, user_id)
     return {"StatusMessage": "Success Delete Params"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

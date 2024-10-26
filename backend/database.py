@@ -4,11 +4,11 @@ from sqlalchemy.orm import sessionmaker
 
 dialect = "postgresql"
 driver = "psycopg2"
-username = "psql"
+username = "postgres"
 password = "psql"
 host = "localhost"
 port = "5432"
-database = "psql"
+database = "postgres"
 url = f"{dialect}+{driver}://{username}:{password}@{host}:{port}/{database}"
 
 engine = create_engine(url, echo=True)

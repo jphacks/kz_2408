@@ -24,12 +24,11 @@ def create_json_params(db: Session, self_introduction: str, client):
     try:
         result = db.execute(q, params)
         db.commit()
+        print("This is executed")
         return params_json
     except SQLAlchemyError as e:
         db.rollback()
         print("Error occurred:", e)
-        return None
-    finally:
         return None
 
 
@@ -46,8 +45,6 @@ def read_json_params(db: Session, user_id: int):
     except SQLAlchemyError as e:
         db.rollback()
         print("Error occurred:", e)
-        return None
-    finally:
         return None
 
 
@@ -73,8 +70,6 @@ def update_json_params(user_id: int, client, db: Session, self_introduction: str
         db.rollback()
         print("Error occured:", e)
         return None
-    finally:
-        return None
 
 
 # DELETE
@@ -91,6 +86,4 @@ def delete_params_json(db: Session, user_id: int):
     except SQLAlchemyError as e:
         db.rollback()
         print("Error occured:", e)
-        return None
-    finally:
         return None

@@ -9,6 +9,8 @@ run:
 # 仮想環境有効化
 ac:
 	. ./venv/bin/activate
+cac:
+	python3 -m venv venv
 
 # 仮想環境無効化
 dac:

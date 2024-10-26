@@ -19,10 +19,12 @@ dbinit:
 	# sudo chmod 775 -R data
 
 init:
-	psql -U psql -f setup.sql -d psql -h localhost -p 5432
+	psql -u postgres -f setup.sql -d postgres -h localhost -p 5432
+	# sudo -u postgres psql -d postgres -f setup.sql
 
 login:
-	psql -U psql -d psql -h localhost -p 5432
+	psql -U postgres -d postgres -h localhost -p 5432
+	# sudo -U postgres psql
 
 dbattach:
 	docker compose logs -f db
