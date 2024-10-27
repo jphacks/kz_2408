@@ -68,23 +68,101 @@ https://anime-create.com/hack/gameconnect.html
 - 孤独な人とそうでない人の致死率、人数、年代、性別などを調べ、製品背景を意識した
 
 
+
+
+ ;
+
+
+
+
+
 <!-- これより下は岡崎さんにお願いする -->
 
 ## 開発技術
+*注意
+デモアプリ並び実際の発表時にはフロントエンドの
+jphack.htmlのみで動作しfirebaseの設定を除き２日間のみで
+完全に０から開発した。
+
+高速開発を実現する為、外部ライブラリHTMLのみを用い
+ライブラリも全てCDNの読み込みのみで完結した
+加えて、デザインcssもhtmlの１つのファイルで完結した.
+
+以下はデモ発表時に使用したjphack.htmlについて説明する
+
+
+<img width="477" alt="スクリーンショット 2024-10-27 22 06 47" src="https://github.com/user-attachments/assets/994d94b9-f3a9-49ec-8b59-12b79657910f">
+
+Main Component (メインコンポーネント)<br>
+メインコンポーネントはアプリケーション全体のUIの切り替えを管理する中心的な要素である。ユーザーの認証状態に基づいて、適切なコンポーネント（認証やチーム管理など）に遷移する役割を担う。UI遷移をスムーズに行うため、ユーザー情報と状態を受け取り、他のコンポーネントに指示を送る。
+
+2. User Auth Component (ユーザー認証コンポーネント)<br>
+ユーザー認証に関連する機能を担当する。Firebase Authenticationを使用し、ユーザーのサインイン・サインアウトや認証情報の管理を行う。認証が成功した場合、ユーザー情報を他のコンポーネントへと引き渡す。
+
+3. User Auth Profile Component (ユーザープロフィールコンポーネント)<br>
+ユーザーのプロフィール情報を管理し表示するためのコンポーネント。認証後のユーザー情報をFirebase Realtime Databaseから取得し、ユーザーの名前、自己紹介、過去の参加履歴などのデータを表示・更新する役割を持つ。
+
+4. Team Management Component (チーム管理コンポーネント)<br>
+チームの作成・管理を行うコンポーネント。チームの作成時には、ユーザーが指定した情報（場所、人数、日程など）を基にFirebase Realtime Databaseに保存し、チームのマッチングや管理機能を提供する。UI上では、チーム作成フォームや現在のチーム情報を表示・操作可能である。
+
+5. Firebase Realtime Database<br>
+このアプリケーションのバックエンドとして機能し、リアルタイムでデータの読み書きを行う。ユーザー情報、チーム情報、メッセージなどのデータをクラウド上で管理し、クライアントサイドでのデータ同期を行う。
+
+
 ### 活用した技術
-#### API・データ
-* 
-* 
 
 #### フレームワーク・ライブラリ・モジュール
-* 
-* 
+・Vue.js<br>
+　・コンポーネントベースのJavaScriptフレームワークで、UIを構築し、リアクティブなデータバインディングを提供。<br>
+・Google Firebase<br>
+　・リアルタイムデータベースを提供するクラウドプラットフォームで、データ保存とリアルタイム同期を容易にする。<br>
+・Google Firebase Auth<br>
+　・Firebaseのユーザー認証サービスで、Googleなどのサードパーティ認証を簡単に実装可能。<br>
+・Google Firebase Realtime Database<br>
+　・クラウド上でリアルタイムデータの読み書きを可能にするデータベースサービス。<br>
+・Leaflet.js<br>
+　・オープンソースの地図ライブラリで、インタラクティブなマップを作成できる軽量なツール。<br>
+・Font Awesome<br>
+　・アイコンフォントとSVGフレームワークで、さまざまなアイコンを簡単にウェブページに追加可能。<br>
+・Google Fonts (DotGothic16)<br>
+　・ウェブ用のフォントライブラリで、アプリのデザインに日本語フォントを適用するために使用。<br>
 
-#### デバイス
-* 
-* 
-
-### 独自技術
 #### ハッカソンで開発した独自機能・技術
-* 独自で開発したものの内容をこちらに記載してください
-* 特に力を入れた部分をファイルリンク、またはcommit_idを記載してください。
+
+・Leaflet.jsを用いた直感的な地図操作<br>
+Google Mapは使用せずにCDNのオープンソースを用いた<br>
+
+
+       // チーム作成用のマップを初期化
+       this.createTeamMap = L.map('create-team-map').setView([35.6895, 139.6917], 13); // 初期位置を東京に設定
+
+       // OSMタイルレイヤーを追加
+       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+           attribution: '© OpenStreetMap contributors'
+       }).addTo(this.createTeamMap);
+
+       // 地図をクリックしたときにマーカーを追加
+       this.createTeamMap.on('click', (e) => {
+           if (this.createTeamMarker) {
+               this.createTeamMarker.setLatLng(e.latlng);
+           } else {
+               this.createTeamMarker = L.marker(e.latlng, { draggable: true }).addTo(this.createTeamMap);
+               // マーカーをドラッグした際に位置を更新
+               this.createTeamMarker.on('dragend', (event) => {
+                   const marker = event.target;
+                   const position = marker.getLatLng();
+                   this.createTeamLocation = {
+                       lat: position.lat,
+                       lng: position.lng
+                   };
+               });
+           }
+           this.createTeamLocation = {
+               lat: e.latlng.lat,
+               lng: e.latlng.lng
+           };
+       })
+・リアルタイムなチーム作成・管理とチャット機能<br>
+・ゲーム風のプロフィールステータス管理<br>
+・イベント終了後のレビュー機能
+
