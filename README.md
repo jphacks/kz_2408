@@ -68,23 +68,54 @@ https://anime-create.com/hack/gameconnect.html
 - 孤独な人とそうでない人の致死率、人数、年代、性別などを調べ、製品背景を意識した
 
 
+
+
+
+
+
+
+
 <!-- これより下は岡崎さんにお願いする -->
 
 ## 開発技術
+*注意
+デモアプリ並び実際の発表時にはフロントエンドの
+jphack.htmlのみで動作する
+以下はデモ発表時に使用したjphack.htmlについて説明する
+
+
+<img width="477" alt="スクリーンショット 2024-10-27 22 06 47" src="https://github.com/user-attachments/assets/994d94b9-f3a9-49ec-8b59-12b79657910f">
+
+Main Component (メインコンポーネント)<br>
+メインコンポーネントはアプリケーション全体のUIの切り替えを管理する中心的な要素である。
+
+2. User Auth Component (ユーザー認証コンポーネント)<br>
+ユーザー認証に関連する機能を担当する。Firebase Authenticationを使用し、ユーザーのサインイン・サインアウトや認証情報の管理を行う。
+
+3. User Auth Profile Component (ユーザープロフィールコンポーネント)<br>
+ユーザーのプロフィール情報を管理し表示するためのコンポーネント。認証後のユーザー情報をFirebase Realtime Databaseから取得し、ユーザーの名前、自己紹介、過去の参加履歴などのデータを表示・更新する役割を持つ。
+
+4. Team Management Component (チーム管理コンポーネント)<br>
+チームの作成・管理を行うコンポーネント。チームの作成時には、ユーザーが指定した情報（場所、人数、日程など）を基にFirebase Realtime Databaseに保存し、チームのマッチングや管理機能を提供する。UI上では、チーム作成フォームや現在のチーム情報を表示・操作可能である。
+
+5. Firebase Realtime Database<br>
+
+
 ### 活用した技術
-#### API・データ
-* 
-* 
 
 #### フレームワーク・ライブラリ・モジュール
-* 
-* 
+・Vue.js<br>
+・Google Firebase<br>
+・Google Firebase Auth<br>
+・Google Firebase Realtime Database<br>
+・Leaflet.js<br>
+・Font Awesome<br>
+・Google Fonts (DotGothic16)<br>
 
-#### デバイス
-* 
-* 
-
-### 独自技術
 #### ハッカソンで開発した独自機能・技術
-* 独自で開発したものの内容をこちらに記載してください
-* 特に力を入れた部分をファイルリンク、またはcommit_idを記載してください。
+
+・Leaflet.jsを用いた直感的な地図操作
+・リアルタイムなチーム作成・管理とチャット機能<br>
+・ゲーム風のプロフィールステータス管理<br>
+・イベント終了後のレビュー機能
+
