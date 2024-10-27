@@ -89,16 +89,16 @@ jphack.htmlのみで動作する
 Main Component (メインコンポーネント)<br>
 メインコンポーネントはアプリケーション全体のUIの切り替えを管理する中心的な要素である。
 
-2. User Auth Component (ユーザー認証コンポーネント)<br>
+User Auth Component (ユーザー認証コンポーネント)<br>
 ユーザー認証に関連する機能を担当する。Firebase Authenticationを使用し、ユーザーのサインイン・サインアウトや認証情報の管理を行う。
 
-3. User Auth Profile Component (ユーザープロフィールコンポーネント)<br>
+User Auth Profile Component (ユーザープロフィールコンポーネント)<br>
 ユーザーのプロフィール情報を管理し表示するためのコンポーネント。認証後のユーザー情報をFirebase Realtime Databaseから取得し、ユーザーの名前、自己紹介、過去の参加履歴などのデータを表示・更新する役割を持つ。
 
-4. Team Management Component (チーム管理コンポーネント)<br>
+Team Management Component (チーム管理コンポーネント)<br>
 チームの作成・管理を行うコンポーネント。チームの作成時には、ユーザーが指定した情報（場所、人数、日程など）を基にFirebase Realtime Databaseに保存し、チームのマッチングや管理機能を提供する。UI上では、チーム作成フォームや現在のチーム情報を表示・操作可能である。
 
-5. Firebase Realtime Database<br>
+Firebase Realtime Database<br>
 
 
 ### 活用した技術
