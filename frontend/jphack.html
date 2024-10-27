@@ -1,0 +1,3044 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>チームマッチングアプリ</title>
+    <!-- 開発言語Vue CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2/dist/vue.global.js"></script>
+
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/8.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.1.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.1.0/firebase-auth.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet.js JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- スタイル -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+
+<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script><script charset="utf-8">/**
+ * js_common.js
+ */
+
+//get select domain from ssl pages
+// var re = /\/user\/ssl/ig;
+// if (re.test(location.href) == true) {
+//     var select_domain = String(localStorage.getItem("da:app/domain")).trim();
+//     if (select_domain && select_domain.length!==0 ) {
+//         select_domain = select_domain.replace(/\"/g, '');//remove "
+//         var url = '/CMD_SSL?json=yes&domain=' + select_domain + '&dnsproviders=yes&ipp=50';
+//         $.ajax({
+//             url,
+//             success: function (data) {
+//             },
+//             error: function (data) {
+//                 window.location.href = '/user/domains';
+//             }
+//         });
+//     }
+// }
+
+localStorage.setItem("evolution:dark-mode", "disable");
+
+$(document).ready(function () {
+    $('.root-preloader > img').attr('src', '/_assets/img/preloader.svg');
+});
+
+//html replace setting
+var PROXY_HTML_REPLACES=new Array();
+// SSL lets encrypt
+//PROXY_HTML_REPLACES.push({'uri':'/user/ssl/server' ,
+//    'select':'div.inputCheck-label' ,
+//    'search':'Create your own self signed certificate' , 'replace':'自己署名証明書を作成'});
+PROXY_HTML_REPLACES.push({'uri':'/user/password' ,'select':'#root > div > div.app-content > main > section > article > section:nth-child(2) > div:nth-child(1) > div > label > span' , 'search':'Current DirectAdmin Password:' , 'replace':'現在のパスワード：'});
+PROXY_HTML_REPLACES.push({'uri':'/user/plugins/jetbackup5' ,'select':'title' , 'search':'DirectAdmin ' , 'replace':''});
+
+PROXY_HTML_REPLACES.push({'uri':'/user/dns/mx-records' ,'select':'#root > div > div.app-content > main > section > article > section:nth-child(3) > header > h2 > span' , 'search':'オプション' , 'replace':'メール配送設定'});
+PROXY_HTML_REPLACES.push({'uri':'/user/dns/mx-records' ,'select':'#root > div > div.app-content > main > section > article > section:nth-child(3) > div:nth-child(2) > div > div.formElement-content > label > div > div.inputCheck-label > span' , 'search':'Use this server to handle my e-mails. If not, change the MX records and uncheck this option.' , 'replace':'他サーバーでメールを運用する場合はチェックを外します。このサーバーでメールを運用する場合はチェックする必要があります。'});
+
+
+
+
+//css modify setting
+var PROXY_CSS_REPLACES=new Array();
+
+
+//PROXY_CSS_REPLACES.push({'uri':'*' ,'select':'#root > div > div.app-content > main > section > article > header.app-page-header' ,'css':['margin-top','0px']});
+PROXY_CSS_REPLACES.push({'uri':'*' ,'select':'#root > div > div > header' ,'css':['display','none']});
+PROXY_CSS_REPLACES.push({'uri':'*' ,'select':'#i_header_links' ,'css':['display','none']});
+PROXY_CSS_REPLACES.push({'uri':'*' ,'select':'#root > div > div.app-content > div' ,'css':['display','none']});
+PROXY_CSS_REPLACES.push({'uri':'*' ,'select':'#root > div > div.app-content > main > section > div > div > div.filters-bar' ,'css':['display','none']});
+PROXY_CSS_REPLACES.push({'uri':'/user/dns' ,'select':'nav > button' ,'css':['display','block']});
+PROXY_CSS_REPLACES.push({'uri':'/user/dns/mx-records' ,'select':'header > div' ,'css':['display','block']});
+PROXY_CSS_REPLACES.push({'uri':'/user/dns/mx-records' ,'select':'header > div > nav' ,'css':['display','block']});
+PROXY_CSS_REPLACES.push({'uri':'/user/dns/mx-records' ,'select':'header > div > nav > button' ,'css':['display','block']});
+
+
+
+//domainselect
+var _setting_domain='';
+
+/**
+ * 他に特別な処理が有る場合は適時追記していく
+ */
+$(function() {
+
+    // jetbackup 不正URL制御
+    str = location.href;
+    re = /\/user\/plugins\/jetbackup5/ig;
+    if( re.test(str) == true && getParam('path') != "index.html"){
+        location.href = "/user/plugins/jetbackup5?path=index.html";
+        return;
+    }
+
+
+    $(window).on("click",function(e){
+        var str = location.href;
+        var re = /\/CMD_FILE_MANAGER.*/ig;
+        if( re.test(str) == true ){
+            $('body > div.q-menu.q-position-engine.scroll > div > a').remove();
+        }
+    });
+
+});
+
+function getParam(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+function _check_table_dkmi() {
+    $('.input-checkbox').hide();
+    $('#records-table > div > div.r-table-buttons-before').hide();
+    $('#records-table > div > div.relative.mb-4.inline-flex.justify-end.overflow-y-hidden.p-1').hide();
+    $('#root > div > div > main > section > article > header > div > nav.app-page-header-buttons').hide();
+    // x._domainkey のレコード以外を非表示
+    var list = $('#records-table > div > div > table > tbody.q-virtual-scroll__content');
+    list.find('tr');
+    var count = list.find('tr').length;
+    for (var i = 0; i < count; i++) {
+        var _text = list.find('tr').eq(i).find('td').eq(1).find('div').text();
+        _text = _text.trim();
+        // console.log('text', _text)
+        if (_text != 'x._domainkey') {
+            list.find('tr').eq(i).hide();
+        }
+        if (_text == 'x._domainkey') {
+            list.find('tr').eq(i).show();
+        }
+    }
+    $('#records-table').show();
+    $('#records-table > div > div > table > tbody.q-virtual-scroll__content').show();
+}
+
+function _email_add_admin_view_btn(){
+    var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+    var _back_btn = _btn.find('span').find('span');
+    for (var i = 0; i < _back_btn.length; i++) {
+        var t = $(_back_btn[i]).text();
+        t =  t.trim();
+        if (t == '加入者を追加' ) {
+            let back = $(_back_btn[i]).parent().parent();
+            back.show();
+        }
+    }
+}
+
+function _enable_hotlink_btn(){
+    var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+    var _back_btn = _btn.find('span').find('span');
+    for (var i = 0; i < _back_btn.length; i++) {
+        var t = $(_back_btn[i]).text();
+        t =  t.trim();
+        if (t == '直リンク保護を無効' || t == '直リンク保護を有効' || t == '選択中のドメインを追加') {
+            let back = $(_back_btn[i]).parent().parent();
+            back.show();
+        }
+    }
+}
+
+function _enable_create_db_btn() {
+    var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+    var _back_btn = _btn.find('span').find('span');
+    for (var i = 0; i < _back_btn.length; i++) {
+        var t = $(_back_btn[i]).text();
+        t = t.trim();
+        if (t == 'Create New Database') {
+            let back = $(_back_btn[i]).parent().parent();
+            back.show();
+        }
+    }
+}
+
+///evo/user/profile
+function _disable_ad_db(){
+    // console.log('/evo/user/profile');
+    $('#root > div > div.app-content.flex.w-full.flex-col > main > section > article > div:nth-child(2)').hide();
+    $('#root > div > div.app-content.flex.w-full.flex-col > main > section > article > div:nth-child(6)').hide();
+    $('#root > div > div.app-content.flex.w-full.flex-col > main > section > article > div:nth-child(8)').hide();
+    $('#root > div > div.app-content.flex.w-full.flex-col > main > section > article > hr:nth-child(5)').hide();
+    $('#root > div > div.app-content.flex.w-full.flex-col > main > section > article > hr:nth-child(7)').hide();
+    // $('#root > div > div > main > section > article > div:nth-child(4)').hide();
+    var checkboxs = $.find('.input-checkbox');
+    if ( $(checkboxs[0]).attr('class') =='input-checkbox --checked' ){
+        $(checkboxs[0]).click();
+        $(checkboxs[0]).hide();
+    }
+    if ( $(checkboxs[2]).attr('class') =='input-checkbox --checked' ){
+        $(checkboxs[2]).click();
+        $(checkboxs[2]).hide();
+    }
+}
+
+//以下変更不要
+
+/**
+ * init
+ */
+$(function() {
+    $('.app-page-header-navigation').hide();
+    setTimeout(function(){
+        css_change();
+        replace_html();
+        ext_js_filter();
+    },1000)
+});
+
+
+function back_button_hide() {
+    var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+    var _back_btn = _btn.find('span').find('span');
+    for (var i = 0; i < _back_btn.length; i++) {
+        var t = $(_back_btn[i]).text();
+        t =  t.trim();
+        if ( t == '戻る') {
+            let back = $(_back_btn[i]).parent().parent();
+            back.hide();
+        }
+    }
+    // $('body > div.app > div.app-content > main > section > article > header > h1 > button').hide();
+}
+
+function display_mx_records(){
+    // console.log('mx-records---');
+    if ($('#tether-host').find('div').length>0){
+        setTimeout(function(){
+            $('main > section > article > section:nth-child(4)').hide();
+            $('main > section > article > section:nth-child(2)').hide();
+            $('main > section > article > section:nth-child(4)').hide();
+            $('main > section > article > section:nth-child(3) > div > div > div> div > div').show();
+        },1)
+    }else{
+        $('main > section > article > section').show();
+        $('main > section > article > section:nth-child(3) > div > div > div> div > div').show();
+    }
+    $('main > section > article > section:nth-child(3) > div > div > div> div > div').show();
+    $('main > section > article > section:nth-child(3) > div div > div> div > div').show();
+    $('main > section > article > section:nth-child(4)').hide();
+    $('main > section > article > section:nth-child(2)').hide();
+    $('main > section > article > section:nth-child(4)').hide();
+}
+
+/**
+ * common filter javascript
+ */
+function ext_js_filter(){
+
+    if ($('body>div.notyf').length > 0) {
+        // console.log('notyf', $('body>div.notyf').length  , $('body>div.notyf') );
+        // console.log($('body>div.notyf').html());
+        var html = $('body>div.notyf').html();
+        // console.log(html);
+        //regexp h6 tag
+        var re = /<h6>(.+)<\/h6>/ig;
+        var result = html.match(re);
+        if (result && result.length > 0) {
+            // console.log('hit' , result);
+            // if find ロード string
+            var re2 = /ロード/ig;
+            let len = result.length;
+            for(let i=0;i<len;i++){
+                var result2 = result[i].match(re2);
+                if (result2 && result2.length > 0) {
+                    // console.log('hit2', result2);
+                    $('body>div.notyf>div').hide();
+                }else{
+                    $('body>div.notyf>div').show();
+                }
+            }
+        }else{
+            $('body>div.notyf>div').show();
+        }
+    }
+
+    $('body').hide();
+    $('main').hide();
+    $('body').css('opacity', '0');
+    $('main').css('opacity', '0');
+
+    back_button_hide();
+    $('.app-page-header-navigation').show();
+    $('body > div.app > div.app-content > header > div > div.domainsDropdown > span').css('width','5em');
+
+    //hide back_button
+    //$('#root > div > div > main > section > article > header > div > nav > button > span > span').each(function(){
+    $('#root > div > div > main > section > article > header > div > nav > button').each(function(){
+        var t = $(this).find("span").text();
+        var reg = new RegExp('戻る','ig');
+        var ret = reg.test(t);
+        if(ret==true){
+            $(this).hide();
+        }
+    });
+    $('#root > div > div> main > section > article > header > div')
+        .css('display','inline-flex')
+        .animate({opacity: "show"}, "slow" );
+
+    str = location.href;
+    re = /\/user\/stats/ig;
+    if( re.test(str) == true ){
+        $('div.ui-tabs-header > div.ui-tabs-header-tab').eq(2).remove();
+    }
+
+
+    str = location.href;
+    re = /\/user\/stats\/usage/ig;
+    if( re.test(str) == true ){
+        $('div.app-page-header-navigation').remove();
+    }
+
+    str = location.href;
+    re = /\/user\/stats\/webalizer/ig;
+    if( re.test(str) == true ){
+        $('div.app-page-header-navigation').remove();
+    }
+
+
+    str = location.href;
+    re = /\/user\/stats\/(.+)\/statistics\/webalizer/ig;
+    if( re.test(str) == true ){
+        $('nav > button').show();
+    }
+
+    str = location.href;
+    re = /\/user\/stats\/(.+)\/statistics\/awstats/ig;
+    if( re.test(str) == true ){
+        $('nav > button').show();
+    }
+
+    str = location.href;
+    re = /\/user\/stats\/(.+)\/statistics\/webalizer\/awstats/ig;
+    if( re.test(str) == true ){
+        $('nav > button').show();
+    }
+
+    // str = location.href;
+    // re = /\/user\/domains/ig;
+    // if( re.test(str) == true ){
+    //     $('nav > button.-theme-primary').hide();
+    // }
+
+    str = location.href;
+    re = /\/evo\/user\/domains/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/domains');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '戻る' || t=='ドメインの名前を変更') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.hide();
+            }else if(t=='新しく追加'){
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/domains/add-domain
+    str = location.href;
+    re = /\evo\/user\/domains\/add\-domain/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/domains/add-domain');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '戻る') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    str = location.href;
+    re = /\/user\/dns/ig;
+    if( re.test(str) == true ){
+        $('#records-table').show();
+        $('#root > div > main > section> article > header > div > nav > button.button.-theme-neutral').hide();
+    }
+
+    str = location.href;
+    re = /\/user\/dns\/mx-records/ig;
+    if( re.test(str) == true ){
+        $('header > div').css('display','flex');
+        $('header > div > nav').show();
+        $('nav > button').show();
+        $('#records-table').hide();
+        $('body > div > div.app-content > main > section > article > section:nth-child(3) > div:nth-child(3)').hide();
+        let save = $('body > div > div.app-content > main > section > article > section:nth-child(3) > div');
+        if(save && save.length==3){
+            // console.log( $(save[2]) );
+            $(save[2]).hide()
+        }
+    }
+
+    str = location.href;
+    re = /\/user\/email\/create-account/ig;
+    if( re.test(str) == true ){
+        $('nav > button').show();
+    }
+
+
+    str = location.href;
+    re = /\/evo\/user\/password/ig;
+    if( re.test(str) == true ){
+        $('nav > button').show();
+        $('header > div > nav.app-page-header-links').hide();
+        back_button_hide();
+        // let dacheckd = $('body > div.app > div.app-content > main > section > article > section:nth-child(2) > div:nth-child(3) > div > div > div > div:nth-child(1)')
+        let dacheckd = $('#root > div > div > main > section > article > section:nth-child(2) > div:nth-child(3) > div > div > div > div > div:nth-child(1)');
+        if (dacheckd && dacheckd.attr('class')=='input-checkbox --checked'){
+            dacheckd.click();
+            dacheckd.hide();
+        }
+        // let dbcheckd = $('body > div.app > div.app-content > main > section > article > section:nth-child(2) > div:nth-child(3) > div > div > div > div:nth-child(3)')
+        let dbcheckd = $('#root > div > div > main > section > article > section:nth-child(2) > div:nth-child(3) > div > div > div > div > div:nth-child(3)');
+        if(dbcheckd && dbcheckd.attr('class')=='input-checkbox --checked'){
+            dbcheckd.click();
+            dbcheckd.hide();
+        }
+        // $('#root > div > main > section > article > header > div > nav').hide();
+    }
+
+    // /evo/user/email/forwarders 未翻訳部分の翻訳
+    str = location.href;
+    re = /\/evo\/user\/email\/forwarders/ig;
+    if( re.test(str) == true ){
+        var fs = $('.Select__Dropdown__Items__Item').find();
+        let c = fs.prevObject.length;
+        for(var i=0; c>i ; i++){
+            var text = $(fs.prevObject[i]).find('span').text();
+            text = text.trim();
+            if (text ==':blackhole:'){
+                $(fs.prevObject[i]).find('span').text('ブラックホール');
+            }
+            if (text == ':fail:'){
+                $(fs.prevObject[i]).find('span').text('失敗');
+            }
+        }
+    }
+
+    str = location.href;
+    re = /\/evo\/user\/ftp-accounts/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/ftp-accounts');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'FTPアカウントを作成') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/ftp-accounts/create
+    str = location.href;
+    re = /\/evo\/user\/ftp-accounts\/create/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/ftp-accounts/create');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '戻る') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/handlers
+    str = location.href;
+    re = /\/evo\/user\/handlers(.*)/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/handlers and more');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'ハンドラを作成' ) { // || t =='システムApacheハンドラ'
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }else if (t =='システムApacheハンドラ'){
+                let back = $(_back_btn[i]).parent().parent();
+                back.hide();
+            }
+        }
+    }
+
+    // jetbackup ヘッダ削除
+    str = location.href;
+    re = /\/user\/plugins\/jetbackup5/ig;
+    if( re.test(str) == true){
+        //remove()すると動作不良になる
+        $('#plugin-host-header').hide();
+        $('header').hide();
+    }
+
+    // /evo/user/redirects
+    str = location.href;
+    re = /\/evo\/user\/redirects/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/redirects');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '新しいリダイレクトを作成') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+    
+    // /evo/user/subdomains
+    str = location.href;
+    re = /\/evo\/user\/subdomains/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/subdomains');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'サブドメインを追加') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/ssl/server
+    str = location.href;
+    re = /\/evo\/user\/ssl(.*)/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/ssl and more');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'SSLを無効' || t =='SSL CA証明書') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/email/accounts
+    str = location.href;
+    re = /\/evo\/user\/email\/accounts/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/email/accounts');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'アカウントを作成' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/email/forwarders
+    str = location.href;
+    re = /\/evo\/user\/email\/forwarders/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/email/forwarders');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'Eメール転送先を作成' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/email/autoresponders
+    str = location.href;
+    re = /\/evo\/user\/email\/autoresponders/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/email/autoresponders');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '自動返信を作成' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/email/autoresponders/create
+    str = location.href;
+    re = /\/evo\/user\/email\/autoresponders\/create/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/email/autoresponders/create');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '戻る') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/email/vacations
+    str = location.href;
+    re = /\/evo\/user\/email\/vacations/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/email/vacations');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'バケーションメッセージを設定' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+    // /evo/user/email/vacations/create
+    str = location.href;
+    re = /\/evo\/user\/email\/vacations\/create/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/vacations/create');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '戻る') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/email/lists
+    str = location.href;
+    re = /\/evo\/user\/email\/lists/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/email/lists');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'メーリングリストを作成' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+        _email_add_admin_view_btn();
+    }
+
+    // /evo/user/hotlinks
+    str = location.href;
+    re = /\/evo\/user\/hotlinks/ig;
+    if( re.test(str) == true){
+        _enable_hotlink_btn();
+    }
+
+    // /evo/user/database
+    str = location.href;
+    re = /\/evo\/user\/database/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/database');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '新しいデータベースを作成' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+        _enable_create_db_btn();
+    }
+    // /evo/user/database/create
+    str = location.href;
+    re = /\/evo\/user\/database\/create/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/database/create');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '戻る') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+        _enable_create_db_btn();
+    }
+
+    // /evo/user/ssh-keys/public
+    str = location.href;
+    re = /\/evo\/user\/ssh-keys\/public/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/ssh-keys/public');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'キーを作成' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/cronjobs
+    str = location.href;
+    re = /\/evo\/user\/cronjobs/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/cronjobs');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == 'Cron Jobを作成' ) {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+    // /evo/user/cronjobs/create
+    str = location.href;
+    re = /\/evo\/user\/cronjobs\/create/ig;
+    if( re.test(str) == true ){
+        // console.log('/evo/user/cronjobs/create');
+        var _btn = $('.app-page-header-navigation').find('.app-page-header-buttons').find('button');
+        var _back_btn = _btn.find('span').find('span');
+        for (var i = 0; i < _back_btn.length; i++) {
+            var t = $(_back_btn[i]).text();
+            t =  t.trim();
+            if ( t == '戻る') {
+                let back = $(_back_btn[i]).parent().parent();
+                back.show();
+            }
+        }
+    }
+
+    // /evo/user/email/lists/admins/view
+    str = location.href;
+    re = /\/evo\/user\/email\/lists\/admins\/view/ig;
+    if( re.test(str) == true){
+        // console.log('/evo/user/email/lists/admins/view');
+        $('#root > div > div > header > div > div> div > div > div > div > button').on('click', function (e) {
+            _email_add_admin_view_btn();
+        });
+        _email_add_admin_view_btn();
+    }
+
+    // /evo/user/profile
+    str = location.href;
+    re = /\/evo\/user\/profile/ig;
+    if( re.test(str) == true ){
+        _disable_ad_db();
+    }
+
+    // ssl let'sencrypt ワイルドカード非表示
+    str = location.href;
+    re = /\/user\/ssl\/letsencrypt/ig;
+    if( re.test(str) == true){
+        $('div.inputGroup-right').remove();
+    }
+
+    //default email account not change password
+    str = location.href;
+    re = /\/user\/email\/accounts/ig;
+    if( re.test(str) == true){
+        $('.ui-actions').on('mouseup',function(e){
+            setTimeout(() => {
+                if($('body > div > div > div > div > a:nth-child(1) > span').text()=='パスワードを変更'){
+                    $('body > div > div > div > div > a:nth-child(1)').remove();
+                }                    
+            }, 40);
+        });
+    }
+
+    str = location.href;
+    re = /\/user\/email\/vacations/ig;//vacations settings
+    re2 = /\/user\/email\/vacations\/create/ig;
+    re3 = /\/user\/hotlinks/ig;//直リンク保護 
+    re4 = /\/user\/php-settings/ig;//PHP設定
+    re5 = /\/user\/email\/catch-all/ig;//CatchAll設定
+    re6 = /\/user\/handlers/ig;//システムApacheのハンドラ
+    re7 = /\/user\/email\/spamassassin/ig;//メールスパムアサシン
+    if( re.test(str) == true || re2.test(str) == true || re3.test(str) == true || re4.test(str) == true
+        || re5.test(str) == true || re6.test(str) == true || re7.test(str) == true ){
+        if(_setting_domain==''){
+            _setting_domain = $("#root > div > div > header > div > div> div > div > div > div > button > span.Select__Button__Label").text();
+        }else{
+            var _current_setting_domain = $("#root > div > div > header > div > div> div > div > div > div > button > span.Select__Button__Label").text();
+            if(_current_setting_domain!=_setting_domain){
+                _setting_domain = _current_setting_domain;
+                setTimeout(function(){
+                    location.reload();
+                },180);
+            }
+        }
+    }
+
+    str = location.href;
+    re = /\/user\/email\/spamassassin/ig;//spamassassin settings
+    if( re.test(str) == true){
+        $('#root > div > div > main > section > article > header > div > nav.app-page-header-links > a').hide();
+    }
+
+    str = location.href;
+    re = /\/user\/dns\/mx-records/ig;
+    if (re.test(str) == true) {
+        $('main > section > article > header > div > nav.app-page-header-buttons > button > span').show();
+    }
+
+    str = location.href;
+    re = /\/user\/domains\/add\-domain/ig;
+    if (re.test(str) == true) {
+        $('main > section > article > header > div > nav.app-page-header-buttons > button > span').show();
+    }
+
+    // ドメイン管理≫ドメインを選択≫ドメイン変更画面
+    str = location.href;
+    re = /\/user\/domains\/domain\/.+/ig
+    if (re.test(str) == true) {
+        $('main > section > article > header > div > nav.app-page-header-buttons > button > span').show();
+    }
+
+    // FTP設定≫FTPアカウントの作成
+    str = location.href;
+    re = /\/user\/ftp\-accounts\/create/ig
+    re2 = /\/evo\/user\/ftp\-accounts\/create/ig
+    if (re.test(str) == true || re2.test(str) == true) {
+        $('main > section > article > header > div > nav.app-page-header-buttons > button > span').show();
+    }
+
+    // メールアカウント設定≫メールアカウントを作成
+    str = location.href;
+    re = /\/evo\/user\/email\/create-account/ig
+    re2 = /\/user\/email\/create-account/ig
+    if (re.test(str) == true || re2.test(str) == true) {
+        $('main > section > article > header > div > nav.app-page-header-buttons > button > span').show();
+    }
+
+    // アクセス統計≫ドメインを選択≫統計レポートを表示
+    re = /\/evo\/user\/stats\/.+\/statistics\/webalizer/ig;
+    str = location.href;
+    if (re.test(str) == true) {
+        $('main > section > article > header > div > nav.app-page-header-buttons > button > span').show();
+    }
+
+    // /evo/user/dns
+    str = location.href;
+    re = /\/evo\/user\/dns/ig;
+    if (re.test(str) == true) {
+        $('#root > div > div > header > div > div> div > div > div > div > button').on('click',function(e){
+            _check_table_dkmi();
+            $('#root > div > div > main > section > article > section').show();
+            $('#records-table').show();
+        });
+        _check_table_dkmi();
+    }
+
+    str = location.href;
+    re = /\/evo\/user\/dns\/mx-records/ig;
+    if (re.test(str) == true) {
+        display_mx_records();
+    }
+
+    var homebt = $('body > div.app > div.app-content > main > section > article > header > div > nav.app-page-header-buttons > button > span > span.label-slot > span:nth-child(2)');
+    var hometext = homebt.text();
+    hometext = hometext.trim();
+    if (hometext == 'ホームページに戻ります' ){
+        $('.app-page-header-buttons').hide();
+    }
+
+
+    str = location.href;
+    re = /\/CMD_FILE_MANAGER/ig;
+    if (re.test(str) == true) {
+        $('#q-app > div > div > div > header > div > a').hide();
+        $('#q-app > div > div > div > div.q-drawer-container > aside > div > aside > div:nth-child(3) > div').hide();
+        $('#q-portal--menu--1 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--2 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--3 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--4 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--5 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--6 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--7 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--8 > div > div > div:nth-child(9)').hide();
+        $('#q-portal--menu--9 > div > div > div:nth-child(9)').hide();
+    }
+
+    /*
+    $('.header-logo').hide();
+    $('.userbar').hide();
+    $('.menu-trigger').hide();
+    $('.nav-grid-trigger').hide();
+    */
+    $('.menu-trigger').hide();
+    $('.nav-grid-trigger').hide();
+    $('.header-logo').remove();
+
+    $('#root > div > div > header').css({'display':'block','height': 'auto','border': 'none','background-color':'#FFFFFF'});
+    $('#root > div > div > header > div').css('float','right');
+    $('.app-header').css('border-bottom', 'none');
+    $('.app-header').css('height', '6rem');
+    $('body').css('opacity', 1);
+    $('main').css('opacity', 1);
+    $('body').show();
+    $('main').show();
+}
+
+
+/**
+ * location change listener
+ */
+
+
+var denypaths = [ "/","/user/stats/account" ];
+
+var href = location.href;
+var observer = new MutationObserver(function(mutations) {
+    observer.disconnect();
+    if(denypaths.includes(location.pathname)){
+        //history.back();
+        //return;
+    }
+    css_change();
+    replace_html();
+    ext_js_filter();
+    observer.observe(document, { childList: true, subtree: true });
+    // setTimeout(function(){
+    //     css_change();
+    //     replace_html();
+    //     ext_js_filter();
+    //     observer.observe(document, { childList: true, subtree: true });
+    // },500)
+});
+
+observer.observe(document, { childList: true, subtree: true });
+
+
+
+
+/**
+ * html replace
+ */
+function replace_html(){
+    let c = PROXY_HTML_REPLACES.length;
+    for(var i=0;i<c;i++){
+        var pattern = PROXY_HTML_REPLACES[i].uri;
+        var str = location.href;
+        var select = PROXY_HTML_REPLACES[i].select;
+
+        if(  PROXY_HTML_REPLACES[i].uri =='*'){//all
+            $(select).each(function(){
+                var _html = $(this).html();
+                var replace_html = _html.replace(new RegExp(PROXY_HTML_REPLACES[i].search,'ig'),PROXY_HTML_REPLACES[i].replace);
+                $(this).html(
+                    replace_html
+                );
+            });
+        }else if(str.indexOf(pattern) > -1){//uri mache
+            $(select).each(function(){
+                var _html = $(this).html();
+                var replace_html = _html.replace(new RegExp(PROXY_HTML_REPLACES[i].search,'ig'),PROXY_HTML_REPLACES[i].replace);
+                $(this).html(
+                    replace_html
+                );
+            });
+        }
+    }
+}
+
+/**
+ * css changer
+ */
+function css_change(){
+    let c = PROXY_CSS_REPLACES.length;
+    for(var i=0;i<c;i++){
+        var pattern = PROXY_CSS_REPLACES[i].uri;
+        var str = location.href;
+        var select = PROXY_CSS_REPLACES[i].select;
+        if(  PROXY_CSS_REPLACES[i].uri =='*'){//all
+            $(select).each(function(){
+                $(this).css(PROXY_CSS_REPLACES[i].css[0] , PROXY_CSS_REPLACES[i].css[1] );
+            });
+        }else if(str.indexOf(pattern) > -1){//uri mache
+            $(select).css(PROXY_CSS_REPLACES[i].css[0] , PROXY_CSS_REPLACES[i].css[1] );
+            $(select).each(function(){
+                $(this).css(PROXY_CSS_REPLACES[i].css[0] , PROXY_CSS_REPLACES[i].css[1] );
+            });
+        }
+    }
+}
+</script>
+
+<style>
+
+#root > div > div.app-content > header {
+	display:none;
+}
+
+#root > div > div.app-content > main > section > div > div > div.filters-bar{
+	display:none;
+}
+
+#root > div > div.app-content > div{
+	display:none;
+}
+
+#i_header_links{
+	display:none;
+}
+
+#root > div > div> main > section > article > header > div{
+	display:none;
+}
+
+#i_footer{
+	display:none;
+}
+
+footer{
+	display:none;
+}
+
+/*
+#q-app > div > div > header > div > div.da-logo-wrapper.q-mx-md.q-my-sm.q-toolbar__title.ellipsis{
+	display:none;
+}
+*/
+
+#maximizeToggle{
+	display:none;
+}
+
+section.search{
+	display:none;
+}
+
+#records-table, #records-table > div > div:nth-child(2) > div > div:nth-child(2) > button:nth-child(2){
+	display:none;
+}
+
+
+.menu-trigger{ display:none; }
+.nav-grid-trigger{ display:none; }
+.header-logo{ display:none; }
+.userbar{ display:none; }
+header > div > div.q-toolbar__title{ display:none; }
+
+#q-app\ bg-primary > div > div > div.q-drawer-container > aside > div > aside > div:nth-child(1) > a{ display:none;}
+#q-app\ bg-primary > div > div > header > div > a { display:none;}
+
+#root>div>div>main>section>article>header>h1>button{display: none;}
+
+.breadcrumbs{ display: none; }
+.header-spacer{width: 100%;}
+.app-header{
+	border-bottom:none;
+	height: 6rem;
+	display: none;
+}
+/* #root>div.app-content.width\:100\%.fx\:dir\:column>main>section>article>header>div>nav>button{display: none;} */
+#root>div.app-content.width\:100\%.fx\:dir\:column>main>section>article>header>div>nav>button.button.-theme-neutral.-size-big.cursor\:pointer{
+	display: none;
+}
+#root>div.app-content.width\:100\%.fx\:dir\:column>header>div>div.domainsDropdown.fx\:dir\:row.fx\:cross\:center>span{width: 60px;}
+.header-logo{
+	opacity: 0;
+	background-image: none;
+}
+
+body,main{
+	display: none;
+	opacity: 0;
+}
+
+#root>div>main>section>article>header>h1>button{ display: none; }
+/* body>div.notyf>div{ display: none; } */
+
+#q-app>div>div>div>div.q-drawer-container>aside>div>aside>div:nth-child(1)>a{
+	display: none;
+}
+</style>
+
+</head>
+
+
+
+
+
+<body>
+
+    <!-- ヘッダー -->
+    <header id="top">
+        <h1>ゲームコネクト</h1>
+        <h3>"日本のボードゲーム（Board）"を新しく"イノベーション"させる</h3>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <div id="app">
+        <!-- 現在のビューを表示 -->
+
+        <component :is="currentView" ref="teamManagerComponent" :user="user" @user-updated="updateUser" @profile-updated="updateProfile"></component>
+
+
+        <!-- ビューナビゲーションボタン[下部のボタン] -->
+        <div class="view-buttons">
+
+            <!-- チーム作成ボタン -->
+            <button :class="{ active: currentView === 'team-manager' }" @click="setView('team-manager', true)" >
+                <i class="fas fa-plus-circle"></i> 
+            </button>
+
+            <button :class="{ active: currentView === 'team-manager' }" @click="setView('team-manager')">
+                <i class="fas fa-users"></i> 
+            </button>
+
+            <button :class="{ active: currentView === 'user-profile' }" @click="setView('user-profile')" >
+                <i class="fas fa-user"></i> 
+            </button>
+
+        </div>
+    </div>
+
+    <script>
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyDLdnq-y-vp-Nkg3oz5Ji-UHCYYILkP44E",
+            authDomain: "melo-e86ab.firebaseapp.com",
+            projectId: "melo-e86ab",
+            databaseURL: "https://melo-e86ab-default-rtdb.firebaseio.com/",
+            storageBucket: "melo-e86ab.appspot.com",
+            messagingSenderId: "952197722512",
+            appId: "1:952197722512:web:1de85fc56b2cec8cb58315",
+        };
+
+        // Firebase初期化
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // Vueアプリケーション
+        const appVue = Vue.createApp({
+            data() {
+                return {
+                    user: null,
+                    profile: {
+                        introduction: '',
+                        participationCount: 0,
+                        rating: 0
+                    },
+                    currentView: 'user-auth' // デフォルトビューを認証に設定
+                };
+            },
+            methods: {
+                updateUser(user) {
+                    this.user = user;
+                    // ユーザーがログインしたら自動でプロフィールビューに切り替える
+                    if (user) {
+                        this.currentView = 'user-profile';
+                    } else {
+                        this.currentView = 'user-auth';
+                    }
+                },
+                updateProfile(profile) {
+                    this.profile = profile;
+                },
+                setView(view, createTeam = false) {
+        // ユーザーがログインしている場合のみ切り替え
+        if (view !== 'user-auth' && !this.user) {
+            alert('まずログインしてください。');
+            return;
+        }
+        this.currentView = view;
+
+        // チーム作成モーダルを表示する場合
+        if (createTeam) {
+            this.$nextTick(() => {
+                this.$refs.teamManagerComponent.openCreateTeamModal();
+            });
+        }
+    },
+                scrollToSection(sectionId) {
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            },
+            created() {
+                auth.onAuthStateChanged((user) => {
+                    this.updateUser(user);
+                });
+            }
+        });
+
+        // ユーザー認証コンポーネント
+        appVue.component('user-auth', {
+            template: `
+                <div class="authentication-view"　>
+                    <div v-if="!user" class="profile-card">
+                        <h2>ログイン</h2>
+                        <button @click="googleSignIn"><i class="fab fa-google"></i> Googleでサインイン</button>
+                    </div>
+                    <div v-else class="profile-card">
+                        <p><strong>{{ user.displayName }}</strong> さん、ようこそ！</p>
+                        <button @click="signOut"><i class="fas fa-sign-out-alt"></i> サインアウト</button>
+                    </div>
+                </div>
+            `,
+            data() {
+                return {
+                    user: null
+                };
+            },
+            methods: {
+                googleSignIn() {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    firebase.auth().signInWithPopup(provider).then(result => {
+                        this.user = result.user;
+                        this.$emit('user-updated', this.user);
+
+                        // ユーザーの displayName をデータベースに保存
+                        const userProfileRef = db.ref(`userProfiles/${this.user.uid}`);
+                        userProfileRef.update({
+                            displayName: this.user.displayName
+                        });
+                    }).catch(error => {
+                        console.error("認証エラー: ", error);
+                        alert('認証に失敗しました。再度お試しください。');
+                    });
+                },
+                signOut() {
+                    firebase.auth().signOut().then(() => {
+                        this.user = null;
+                        this.$emit('user-updated', this.user);
+                    }).catch(error => {
+                        console.error("サインアウトエラー: ", error);
+                        alert('サインアウトに失敗しました。再度お試しください。');
+                    });
+                }
+            },
+            mounted() {
+                firebase.auth().onAuthStateChanged(user => {
+                    this.user = user;
+                    this.$emit('user-updated', this.user);
+                });
+            }
+        });
+
+        // ユーザープロフィールコンポーネント
+// ユーザープロフィールコンポーネント
+appVue.component('user-profile', {
+    props: ['user'],
+    data() {
+        return {
+            profile: {
+                introduction: '',
+                participationCount: 0,
+                rating: 0,
+                level: 1,
+                experience: 0,
+                strength: 10,
+                agility: 10,
+                intelligence: 10,
+                games: [] // 所有しているゲームのリスト
+            },
+            newGame: '', // 新しく追加するゲーム
+            isEditing: false,
+            profileLoaded: false,
+            otherProfiles: [],
+            showOtherProfileModal: false,
+            selectedProfile: null
+        };
+    },
+    methods: {
+        async fetchProfile() {
+            try {
+                const userProfileRef = db.ref(`userProfiles/${this.user.uid}`);
+                userProfileRef.once('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        this.profile = snapshot.val();
+                        this.setDefaultProfileValues(this.profile);
+                    } else {
+                        this.initializeProfile();
+                    }
+                    this.profileLoaded = true;
+                });
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+            }
+        },
+        setDefaultProfileValues(profile) {
+            if (!profile.displayName) profile.displayName = this.user.displayName || '';
+            if (profile.participationCount === undefined) profile.participationCount = 0;
+            if (profile.rating === undefined) profile.rating = 0;
+            if (!profile.level) profile.level = 1;
+            if (!profile.experience) profile.experience = 0;
+            if (!profile.strength) profile.strength = 10;
+            if (!profile.agility) profile.agility = 10;
+            if (!profile.intelligence) profile.intelligence = 10;
+            if (!profile.games) profile.games = [];
+        },
+        initializeProfile() {
+            this.profile = {
+                displayName: this.user.displayName || '',
+                introduction: '',
+                participationCount: 0,
+                rating: 0,
+                level: 1,
+                experience: 0,
+                strength: 10,
+                agility: 10,
+                intelligence: 10,
+                games: [] // 所有ゲームのデフォルト値
+            };
+        },
+        async saveUserProfile() {
+            try {
+                const userProfileRef = db.ref(`userProfiles/${this.user.uid}`);
+                await userProfileRef.set(this.profile);
+                this.isEditing = false;
+                alert('プロフィールが更新されました');
+                this.$emit('profile-updated', this.profile);
+            } catch (error) {
+                console.error("Error saving profile:", error);
+            }
+        },
+        toggleEdit() {
+            if (this.isEditing) {
+                this.saveUserProfile();
+            } else {
+                this.isEditing = true;
+            }
+        },
+        async fetchOtherProfiles() {
+            try {
+                const userProfilesRef = db.ref('userProfiles');
+                userProfilesRef.once('value', (snapshot) => {
+                    const profilesData = snapshot.val();
+                    this.otherProfiles = [];
+                    for (let uid in profilesData) {
+                        if (uid !== this.user.uid) {
+                            const profile = profilesData[uid];
+                            profile.uid = uid;
+                            this.otherProfiles.push(profile);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching other profiles:", error);
+            }
+        },
+        openOtherProfile(profile) {
+            this.selectedProfile = profile;
+            this.showOtherProfileModal = true;
+        },
+        closeOtherProfileModal() {
+            this.showOtherProfileModal = false;
+            this.selectedProfile = null;
+        },
+        addGame() {
+            if (this.newGame.trim()) {
+                this.profile.games.push(this.newGame.trim());
+                this.newGame = ''; // フィールドをクリア
+                this.saveUserProfile(); // プロフィールを即座に保存
+            }
+        },
+        removeGame(index) {
+            this.profile.games.splice(index, 1);
+            this.saveUserProfile(); // 削除後に即座に保存
+        }
+    },
+    mounted() {
+        this.fetchProfile();
+        this.fetchOtherProfiles();
+    },
+    beforeDestroy() {
+        const userProfileRef = db.ref(`userProfiles/${this.user.uid}`);
+        userProfileRef.off(); // Firebaseのリスナーを解除
+    },
+    template: `
+        <div class="profile-view profile-card">
+            <h2>自己紹介</h2>
+            <div v-if="profileLoaded">
+                <p v-if="!isEditing"><strong>{{ profile.displayName }}</strong>: {{ profile.introduction }}</p>
+                <div v-else>
+                    <div class="input-group">
+                        <label for="displayName">名前</label>
+                        <input id="displayName" v-model="profile.displayName" type="text" placeholder="名前を入力">
+                        <small class="helper-text">あなたの表示名を入力してください。</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="introduction">自己紹介</label>
+                        <textarea id="introduction" v-model="profile.introduction" placeholder="自己紹介を入力"></textarea>
+                        <small class="helper-text">自分を簡単に紹介してください。</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="strength">力</label>
+                        <input id="strength" v-model.number="profile.strength" type="number" min="0" max="100" placeholder="0〜100">
+                        <small class="helper-text">キャラクターの力のステータスを入力してください。</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="agility">敏捷性</label>
+                        <input id="agility" v-model.number="profile.agility" type="number" min="0" max="100" placeholder="0〜100">
+                        <small class="helper-text">キャラクターの敏捷性のステータスを入力してください。</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="intelligence">知性</label>
+                        <input id="intelligence" v-model.number="profile.intelligence" type="number" min="0" max="100" placeholder="0〜100">
+                        <small class="helper-text">キャラクターの知性のステータスを入力してください。</small>
+                    </div>
+                    
+                    <!-- 所有ゲーム編集 -->
+                    <div class="input-group">
+                        <label for="games">所有しているゲーム</label>
+                        <ul>
+                            <li v-for="(game, index) in profile.games" :key="index">
+                                {{ game }} <button @click="removeGame(index)">削除</button>
+                            </li>
+                        </ul>
+                        <input v-model="newGame" type="text" placeholder="新しいゲームを追加">
+                        <button @click="addGame">追加</button>
+                    </div>
+
+                    <button @click="toggleEdit"><i class="fas fa-save"></i> 保存</button>
+                </div>
+                <button v-if="!isEditing" @click="toggleEdit"><i class="fas fa-edit"></i> 編集する</button>
+            </div>
+
+            <p v-else>読み込み中...</p>
+
+            <!-- 異世界転生風ステータス -->
+            <div class="status-display" v-if="profileLoaded">
+                <h3>ステータス</h3>
+                <p>
+                    【名前】：{{ profile.displayName }}<br>
+                    【レベル】：{{ profile.level }}<br>
+                    【経験値】：{{ profile.experience }}<br>
+                    【力】：{{ profile.strength }}<br>
+                    【敏捷性】：{{ profile.agility }}<br>
+                    【知性】：{{ profile.intelligence }}<br>
+                    【所有しているゲーム】：{{ profile.games.join(', ') }}
+                </p>
+            </div>
+
+            <!-- 他のユーザーのプロフィール -->
+            <div class="other-profiles">
+                <h3>他のユーザーの自己紹介</h3>
+                <div v-for="otherProfile in otherProfiles" :key="otherProfile.uid" class="other-profile-card" @click="openOtherProfile(otherProfile)">
+                    <h3>{{ otherProfile.displayName }}</h3>
+                    <p>{{ otherProfile.introduction }}</p>
+                </div>
+            </div>
+
+            <!-- 他のユーザーのプロフィールモーダル -->
+            <div class="modal" v-if="showOtherProfileModal">
+                <div class="modal-content">
+                    <span class="close-button" @click="closeOtherProfileModal">&times;</span>
+                    <h2>{{ selectedProfile.displayName }}さんのプロフィール</h2>
+                    <p>{{ selectedProfile.introduction }}</p>
+                    <div class="status-display">
+                        <h3>ステータス</h3>
+                        <p>
+                            【名前】：{{ selectedProfile.displayName }}<br>
+                            【レベル】：{{ selectedProfile.level }}<br>
+                            【経験値】：{{ selectedProfile.experience }}<br>
+                            【力】：{{ selectedProfile.strength }}<br>
+                            【敏捷性】：{{ selectedProfile.agility }}<br>
+                            【知性】：{{ selectedProfile.intelligence }}<br>
+                            【所有しているゲーム】：{{ selectedProfile.games.join(', ') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `
+});
+
+        // チーム管理コンポーネント
+        appVue.component('team-manager', {
+            props: ['user'],
+            data() {
+                return {
+                    teamName: '',
+                    teamParticipants: '',  // 参加人数
+                    teamRequirements: '',  // 参加要件
+                    teamGame: '',  // ゲーム名
+                    teamMemo: '', // チームの詳細メモ
+                    startDate: '', // 日程開始
+                    startTime: '', // 開始時間
+                    endDate: '', // 日程終了
+                    endTime: '', // 終了時間
+                    teams: [],
+                    teamJoined: false,
+                    userProfile: null,
+                    joinedTeams: [], // 参加済みのチームを管理するリスト
+                    mainMap: null,
+                    mainMapMarkers: [],
+                    createTeamMap: null,
+                    createTeamMarker: null,
+                    createTeamLocation: null, // チーム作成時の開催場所
+                    showCreateTeamModal: false,
+                    showTeamDetailModal: false,
+                    selectedTeam: null,
+                    isCreatingTeam: false, // チーム作成中のフラグ
+                    messages: [],
+                    newMessage: '',
+                    reviews: [],
+                    newReview: '',
+                    games: ['ボードゲーム', 'カードゲーム', 'TRPG', 'パズル', '戦略ゲーム', 'ダイスゲーム', 'クイズゲーム', 'パーティーゲーム' ,'その他'],
+                    countdownInterval: null,
+                    remainingTime: ''
+                };
+            },
+            methods: {
+                async createTeam() {
+                    if (this.teamName && this.teamParticipants && this.teamRequirements && this.teamGame && this.createTeamLocation && this.startDate && this.startTime && this.endDate && this.endTime) {
+                        if (this.isCreatingTeam) return; // 二重作成防止
+                        this.isCreatingTeam = true;
+
+                        // 日程の組み合わせを生成
+                        const startDateTime = `${this.startDate}T${this.startTime}:00`;
+                        const endDateTime = `${this.endDate}T${this.endTime}:00`;
+
+                        await db.ref('teams').push({
+                            name: this.teamName,
+                            participants: parseInt(this.teamParticipants), // 数値として保存
+                            requirements: this.teamRequirements,
+                            game: this.teamGame,
+                            memo: this.teamMemo, // 詳細メモを追加
+                            startDateTime: startDateTime, // 開始日時
+                            endDateTime: endDateTime, // 終了日時
+                            members: [this.user.uid],
+                            currentParticipants: 1, // 初回参加者
+                            host: this.user.uid, // 主催者のUIDを追加
+                            location: this.createTeamLocation, // 緯度・経度を保存
+                            reviews: {} // レビューの初期化
+                        });
+
+                        // フォームをリセット
+                        this.teamName = '';
+                        this.teamParticipants = '';
+                        this.teamRequirements = '';
+                        this.teamGame = '';
+                        this.teamMemo = '';
+                        this.startDate = '';
+                        this.startTime = '';
+                        this.endDate = '';
+                        this.endTime = '';
+                        this.createTeamLocation = null;
+                        if (this.createTeamMarker) {
+                            this.createTeamMap.removeLayer(this.createTeamMarker);
+                            this.createTeamMarker = null;
+                        }
+                        this.showCreateTeamModal = false;
+                        this.isCreatingTeam = false;
+
+                        // ページを再読み込み
+                        window.location.reload();
+                    } else {
+                        alert('全てのフィールドと開催場所を入力してください。');
+                    }
+                },
+                async fetchTeams() {
+                    const teamsRef = db.ref('teams');
+                    teamsRef.off(); // 既存のリスナーを解除
+                    teamsRef.on('value', async (snapshot) => {
+                        this.teams = [];
+                        this.joinedTeams = []; // リセット
+
+                        const teamsData = snapshot.val();
+                        if (teamsData) {
+                            const teamKeys = Object.keys(teamsData);
+                            for (let key of teamKeys) {
+                                const team = teamsData[key];
+                                team.id = key;
+                                team.memberProfiles = [];
+
+                                if (team.members && team.members.length > 0) {
+                                    // メンバー全員のプロフィールを取得
+                                    const profilePromises = team.members.map(uid => db.ref(`userProfiles/${uid}`).once('value'));
+                                    try {
+                                        const snapshots = await Promise.all(profilePromises);
+                                        snapshots.forEach(snap => {
+                                            if (snap.exists()) {
+                                                team.memberProfiles.push(snap.val());
+                                            }
+                                        });
+                                    } catch (error) {
+                                        console.error("メンバープロフィール取得エラー: ", error);
+                                    }
+
+                                    // ユーザーがこのチームに参加しているか確認
+                                    if (team.members.includes(this.user.uid)) {
+                                        this.joinedTeams.push(team.id);
+                                    }
+                                }
+
+                                this.teams.push(team);
+                            }
+                        }
+
+                        // マーカーを更新
+                        this.updateMainMapMarkers();
+                    });
+                },
+                async joinTeam(teamId) {
+                    const teamRef = db.ref(`teams/${teamId}`);
+                    const teamDoc = await teamRef.once('value');
+                    const teamData = teamDoc.val();
+
+                    if (teamData) {
+                        const members = teamData.members || [];
+                        const currentParticipants = teamData.currentParticipants || 0;
+                        const maxParticipants = teamData.participants || 0;
+
+                        // チームが締められている場合
+                        if (currentParticipants >= maxParticipants) {
+                            alert('このチームは既に満員です。');
+                            return;
+                        }
+
+                        // ユーザーがまだ参加していない場合
+                        if (!members.includes(this.user.uid)) {
+                            members.push(this.user.uid);
+                            await teamRef.update({
+                                members: members,
+                                currentParticipants: currentParticipants + 1
+                            });
+
+                            // 参加済みリストに追加
+                            this.joinedTeams.push(teamId);
+
+                            // プロフィールの参加回数を増やす
+                            const userProfileRef = db.ref(`userProfiles/${this.user.uid}`);
+                            await userProfileRef.transaction(profile => {
+                                if (profile) {
+                                    profile.participationCount = (profile.participationCount || 0) + 1;
+                                }
+                                return profile;
+                            });
+
+                            // チームデータを再取得
+                            this.fetchTeams();
+
+                            // フィードバック: 参加フラグを更新
+                            this.teamJoined = true;
+
+                            alert('チームに参加しました！');
+                        }
+                    }
+                },
+                async deleteTeam(teamId) {
+                    if (confirm('本当にこのチームを消去しますか？')) {
+                        try {
+                            await db.ref(`teams/${teamId}`).remove();
+                            alert('チームが消去されました。');
+                            this.fetchTeams();
+                            this.closeTeamDetailModal();
+                        } catch (error) {
+                            console.error("チーム消去エラー: ", error);
+                            alert('チームの消去に失敗しました。');
+                        }
+                    }
+                },
+                async fetchUserProfile() {
+                    const userProfileRef = db.ref(`userProfiles/${this.user.uid}`);
+                    userProfileRef.once('value', (snapshot) => {
+                        if (snapshot.exists()) {
+                            this.userProfile = snapshot.val();
+                        }
+                    });
+                },
+                hasJoinedTeam(teamId) {
+                    return this.joinedTeams.includes(teamId);
+                },
+                initializeMainMap() {
+                    // メインマップを初期化
+                    this.mainMap = L.map('main-map').setView([35.6895, 139.6917], 5); // 初期位置を日本全体に設定
+
+                    // OSMタイルレイヤーを追加
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(this.mainMap);
+
+                    // マーカーを更新
+                    this.updateMainMapMarkers();
+                },
+                updateMainMapMarkers() {
+                    // 既存のマーカーをクリア
+                    if (this.mainMapMarkers) {
+                        this.mainMapMarkers.forEach(marker => this.mainMap.removeLayer(marker));
+                    }
+                    this.mainMapMarkers = [];
+
+                    // チームの開催場所にマーカーを追加
+                    this.teams.forEach(team => {
+                        if (team.location) {
+                            const marker = L.marker([team.location.lat, team.location.lng]).addTo(this.mainMap);
+                            const startDate = new Date(team.startDateTime);
+                            const endDate = new Date(team.endDateTime);
+                            const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                            marker.bindPopup(`
+                                <strong>${team.name}</strong><br>
+                                ゲーム: ${team.game}<br>
+                                日程: ${startDate.toLocaleDateString('ja-JP', options)} ～ ${endDate.toLocaleDateString('ja-JP', options)}
+                            `);
+                            this.mainMapMarkers.push(marker);
+                        }
+                    });
+                },
+                openCreateTeamModal() {
+                    this.showCreateTeamModal = true;
+                    this.$nextTick(() => {
+                        this.initializeCreateTeamMap();
+                    });
+                },
+                closeCreateTeamModal() {
+                    this.showCreateTeamModal = false;
+                },
+                initializeCreateTeamMap() {
+                    // 既存のマップがある場合はリセット
+                    if (this.createTeamMap) {
+                        this.createTeamMap.off();
+                        this.createTeamMap.remove();
+                        this.createTeamMap = null;
+                        this.createTeamMarker = null;
+                        this.createTeamLocation = null;
+                    }
+
+                    // チーム作成用のマップを初期化
+                    this.createTeamMap = L.map('create-team-map').setView([35.6895, 139.6917], 13); // 初期位置を東京に設定
+
+                    // OSMタイルレイヤーを追加
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(this.createTeamMap);
+
+                    // 地図をクリックしたときにマーカーを追加
+                    this.createTeamMap.on('click', (e) => {
+                        if (this.createTeamMarker) {
+                            this.createTeamMarker.setLatLng(e.latlng);
+                        } else {
+                            this.createTeamMarker = L.marker(e.latlng, {draggable: true}).addTo(this.createTeamMap);
+                            // マーカーをドラッグした際に位置を更新
+                            this.createTeamMarker.on('dragend', (event) => {
+                                const marker = event.target;
+                                const position = marker.getLatLng();
+                                this.createTeamLocation = {
+                                    lat: position.lat,
+                                    lng: position.lng
+                                };
+                            });
+                        }
+                        this.createTeamLocation = {
+                            lat: e.latlng.lat,
+                            lng: e.latlng.lng
+                        };
+                    });
+                },
+                openTeamDetail(team) {
+                    this.selectedTeam = team;
+                    this.showTeamDetailModal = true;
+                    this.fetchMessages(team.id);
+                    this.fetchReviews(team.id);
+                    this.startCountdown(team.endDateTime);
+                },
+                closeTeamDetailModal() {
+                    this.showTeamDetailModal = false;
+                    this.selectedTeam = null;
+                    this.messages = [];
+                    this.newMessage = '';
+                    this.reviews = [];
+                    this.newReview = '';
+                    this.remainingTime = '';
+                    if (this.countdownInterval) {
+                        clearInterval(this.countdownInterval);
+                        this.countdownInterval = null;
+                    }
+                },
+                // メッセージ関連
+                fetchMessages(teamId) {
+                    const messagesRef = db.ref(`teams/${teamId}/messages`).orderByChild('timestamp');
+                    messagesRef.off(); // 既存のリスナーを解除
+                    messagesRef.on('value', (snapshot) => {
+                        this.messages = [];
+                        const messagesData = snapshot.val();
+                        if (messagesData) {
+                            const messageKeys = Object.keys(messagesData);
+                            messageKeys.forEach(key => {
+                                const message = messagesData[key];
+                                this.messages.push(message);
+                            });
+                        }
+                        // スクロールを一番下に
+                        this.$nextTick(() => {
+                            const messageList = this.$el.querySelector('.message-list');
+                            if (messageList) {
+                                messageList.scrollTop = messageList.scrollHeight;
+                            }
+                        });
+                    });
+                },
+                sendMessage() {
+                    if (this.newMessage.trim() === '') return;
+                    const teamId = this.selectedTeam.id;
+                    const messagesRef = db.ref(`teams/${teamId}/messages`);
+                    const newMessageRef = messagesRef.push();
+                    newMessageRef.set({
+                        senderId: this.user.uid,
+                        senderName: this.user.displayName,
+                        content: this.newMessage.trim(),
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    this.newMessage = '';
+                },
+                // レビュー関連
+                fetchReviews(teamId) {
+                    const reviewsRef = db.ref(`teams/${teamId}/reviews`).orderByChild('timestamp');
+                    reviewsRef.off(); // 既存のリスナーを解除
+                    reviewsRef.on('value', (snapshot) => {
+                        this.reviews = [];
+                        const reviewsData = snapshot.val();
+                        if (reviewsData) {
+                            const reviewKeys = Object.keys(reviewsData);
+                            reviewKeys.forEach(key => {
+                                const review = reviewsData[key];
+                                this.reviews.push(review);
+                            });
+                        }
+                    });
+                },
+                postReview() {
+                    if (this.newReview.trim() === '') return;
+                    const teamId = this.selectedTeam.id;
+                    const reviewsRef = db.ref(`teams/${teamId}/reviews`);
+                    const newReviewRef = reviewsRef.push();
+                    newReviewRef.set({
+                        reviewerId: this.user.uid,
+                        reviewerName: this.user.displayName,
+                        content: this.newReview.trim(),
+                        rating: this.selectedTeam.rating || 0,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    this.newReview = '';
+                    alert('レビューが投稿されました。');
+                },
+                // カウントダウン関連
+                startCountdown(endDateTime) {
+                    const endTime = new Date(endDateTime).getTime();
+                    this.updateCountdown(endTime);
+                    this.countdownInterval = setInterval(() => {
+                        this.updateCountdown(endTime);
+                    }, 1000);
+                },
+                updateCountdown(endTime) {
+                    const now = new Date().getTime();
+                    const distance = endTime - now;
+
+                    if (distance < 0) {
+                        clearInterval(this.countdownInterval);
+                        this.remainingTime = '終了しました';
+                    } else {
+                        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                        this.remainingTime = `${days}日 ${hours}時間 ${minutes}分 ${seconds}秒`;
+                    }
+                },
+                filterTeamsByGame(selectedGame) {
+                    const teamsRef = db.ref('teams');
+                    teamsRef.off(); // 既存のリスナーを解除
+                    if (selectedGame === 'すべて') {
+                        this.fetchTeams();
+                        return;
+                    }
+                    teamsRef.orderByChild('game').equalTo(selectedGame).on('value', async (snapshot) => {
+                        this.teams = [];
+                        this.joinedTeams = []; // リセット
+
+                        const teamsData = snapshot.val();
+                        if (teamsData) {
+                            const teamKeys = Object.keys(teamsData);
+                            for (let key of teamKeys) {
+                                const team = teamsData[key];
+                                team.id = key;
+                                team.memberProfiles = [];
+
+                                if (team.members && team.members.length > 0) {
+                                    // メンバー全員のプロフィールを取得
+                                    const profilePromises = team.members.map(uid => db.ref(`userProfiles/${uid}`).once('value'));
+                                    try {
+                                        const snapshots = await Promise.all(profilePromises);
+                                        snapshots.forEach(snap => {
+                                            if (snap.exists()) {
+                                                team.memberProfiles.push(snap.val());
+                                            }
+                                        });
+                                    } catch (error) {
+                                        console.error("メンバープロフィール取得エラー: ", error);
+                                    }
+
+                                    // ユーザーがこのチームに参加しているか確認
+                                    if (team.members.includes(this.user.uid)) {
+                                        this.joinedTeams.push(team.id);
+                                    }
+                                }
+
+                                this.teams.push(team);
+                            }
+                        }
+
+                        // マーカーを更新
+                        this.updateMainMapMarkers();
+                    });
+                },
+                setView(view) {
+                    this.currentView = view;
+                },
+                isGameEnded(endDateTime) {
+                    const now = new Date().getTime();
+                    const endTime = new Date(endDateTime).getTime();
+                    return now > endTime;
+                }
+            },
+            computed: {
+                hasReviewed() {
+                    if (!this.selectedTeam || !this.reviews.length) return false;
+                    return this.reviews.some(review => review.reviewerId === this.user.uid);
+                }
+            },
+            mounted() {
+                this.fetchTeams();
+                this.initializeMainMap();
+            },
+            template: `
+                <div class="team-view">
+                     <h2>開催中のゲームイベント！！</h2>
+                     <!-- メインマップ -->
+                    <div id="main-map"></div>
+
+                    <h2>ジャンル別検索</h2>
+                    <!-- ゲーム別検索 -->
+                    <div class="input-group">
+                        <label for="gameFilter"><i class="fas fa-gamepad"></i> ゲーム別で検索</label>
+                        <select id="gameFilter" @change="filterTeamsByGame($event.target.value)">
+                            <option value="すべて">すべて</option>
+                            <option v-for="game in games" :key="game" :value="game">{{ game }}</option>
+                        </select>
+                        <small class="helper-text">参加したいゲームを選択してチームを検索できます。</small>
+                    </div>
+
+                    <!-- ゲームリスト -->
+                    <div class="game-list">
+                        <div v-for="game in games" :key="game" class="game-item" @click="filterTeamsByGame(game)">
+                            {{ game }}
+                        </div>
+                        <div class="game-item" @click="filterTeamsByGame('すべて')">
+                            すべて
+                        </div>
+                    </div>
+
+   
+                   <h2 class="dotgothic16-regular">ゲームイベント一覧!!</h2>
+
+                    <!-- チームリスト -->
+                    <div class="team-list">
+                        <div v-for="team in teams" :key="team.id" class="team-item" @click="openTeamDetail(team)">
+                            <h3>{{ team.name }}</h3>
+                          
+                            <p>
+                                <strong>ゲーム:</strong> {{ team.game }}<br>
+                                <strong>日程:</strong> {{ new Date(team.startDateTime).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }} ～ {{ new Date(team.endDateTime).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}<br>
+                                <strong>参加人数:</strong> {{ team.currentParticipants }} / {{ team.participants }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- チーム詳細モーダル -->
+                    <div class="modal" v-if="showTeamDetailModal">
+                        <div class="modal-content">
+                            <span class="close-button" @click="closeTeamDetailModal">&times;</span>
+                            <h2>{{ selectedTeam.name }}</h2>
+
+                                      <div class="timer">
+                                残り時間: {{ remainingTime }}
+                            </div>
+
+                            <p>
+                                <strong>ゲーム:</strong> {{ selectedTeam.game }}<br>
+                                <strong>日程:</strong> {{ new Date(selectedTeam.startDateTime).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }} ～ {{ new Date(selectedTeam.endDateTime).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}<br>
+                                <strong>参加人数:</strong> {{ selectedTeam.currentParticipants }} / {{ selectedTeam.participants }}<br>
+                                <strong>参加要件:</strong> {{ selectedTeam.requirements }}<br>
+                                <strong>詳細メモ:</strong> {{ selectedTeam.memo }}
+                            </p>
+
+                         
+
+                            <button 
+                                v-if="!hasJoinedTeam(selectedTeam.id) && selectedTeam.currentParticipants < selectedTeam.participants" 
+                                @click="joinTeam(selectedTeam.id)">
+                                <i class="fas fa-user-plus"></i> 参加
+                            </button>
+                            <button 
+                                v-if="!hasJoinedTeam(selectedTeam.id) && selectedTeam.currentParticipants >= selectedTeam.participants"
+                                disabled>
+                                <i class="fas fa-user-slash"></i> 定員に達しました
+                            </button>
+                            <div v-else-if="hasJoinedTeam(selectedTeam.id)" class="joined-message">
+                                <i class="fas fa-check-circle"></i>
+                                <span>参加済みのチームです</span>
+                            </div>
+                            <!-- 主催者のみチームを消去できるボタンを表示 -->
+                            <button 
+                                v-if="selectedTeam.host === user.uid" 
+                                @click="deleteTeam(selectedTeam.id)" 
+                                style="background-color: #dc3545; color: white; margin-top: 15px;">
+                                <i class="fas fa-trash-alt"></i> チームを消去
+                            </button>
+                            <!-- 参加メンバーの自己紹介表示 -->
+                            <div v-if="selectedTeam.memberProfiles && selectedTeam.memberProfiles.length > 0">
+                                <h3>参加メンバーの自己紹介</h3>
+                                <ul class="member-introductions">
+                                    <li v-for="(member, index) in selectedTeam.memberProfiles" :key="index">
+                                        <strong>{{ member.displayName }}</strong>
+                                        <p>{{ member.introduction }}</p>
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- メッセージセクション -->
+                            <div class="messages" v-if="selectedTeam.members && selectedTeam.members.includes(user.uid)">
+                                <h3>チームチャット</h3>
+                                <div class="message-list">
+                                    <div v-for="(message, index) in messages" :key="index" class="message">
+                                        <span class="sender">{{ message.senderName }}:</span>
+                                        <span class="content">{{ message.content }}</span>
+                                    </div>
+                                </div>
+                                <div class="message-input">
+                                    <input type="text" v-model="newMessage" @keyup.enter="sendMessage" placeholder="メッセージを入力">
+                                    <button @click="sendMessage"><i class="fas fa-paper-plane"></i> 送信</button>
+                                </div>
+                            </div>
+                            <!-- レビューセクション -->
+                            <div class="reviews" v-if="isGameEnded(selectedTeam.endDateTime) && hasJoinedTeam(selectedTeam.id)">
+                                <h3>レビュー</h3>
+                                <div class="review-list">
+                                    <div v-for="(review, index) in reviews" :key="index" class="review">
+                                        <strong>{{ review.reviewerName }}</strong>  
+                                        <p>{{ review.content }}</p>
+                                    </div>
+                                </div>
+                                <div v-if="!hasReviewed">
+                                    <div class="input-group">
+                                        <label for="reviewContent"><i class="fas fa-comment"></i> レビュー内容</label>
+                                        <textarea id="reviewContent" v-model="newReview" placeholder="レビューを入力"></textarea>
+                                        <small class="helper-text">ゲーム終了後にレビューを投稿できます。</small>
+                                    </div>
+                                    <button @click="postReview"><i class="fas fa-paper-plane"></i> レビューを投稿</button>
+                                </div>
+                                <div v-else>
+                                    <p>既にレビューを投稿しています。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- チーム作成モーダル -->
+
+                    <div class="modal" v-if="showCreateTeamModal">
+                        <div class="modal-content">
+                            <span class="close-button" @click="closeCreateTeamModal">&times;</span>
+                            <h2>チームを作成</h2>
+                            <div class="input-group">
+                                <label for="teamName"><i class="fas fa-clipboard-list"></i> チーム名<span style="color:red;"> *必須</span></label>
+                                <input id="teamName" v-model="teamName" type="text" placeholder="チーム名を入力">
+                                <small class="helper-text">他のユーザーに覚えてもらいやすい名前を入力してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="teamParticipants"><i class="fas fa-users"></i> 参加人数<span style="color:red;"> *必須</span></label>
+                                <input id="teamParticipants" v-model="teamParticipants" type="number" min="1" placeholder="参加人数を入力">
+                                <small class="helper-text">チームに必要な参加人数を入力してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="teamRequirements"><i class="fas fa-info-circle"></i> 参加要件<span style="color:red;"> *必須</span></label>
+                                <input id="teamRequirements" v-model="teamRequirements" type="text" placeholder="参加要件を入力">
+                                <small class="helper-text">チームに参加するための条件やスキルを入力してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="teamGame"><i class="fas fa-gamepad"></i> ゲーム名<span style="color:red;"> *必須</span></label>
+                                <select id="teamGame" v-model="teamGame">
+                                    <option disabled value="">ゲームを選択</option>
+                                    <option v-for="game in games" :key="game" :value="game">{{ game }}</option>
+                                </select>
+                                <small class="helper-text">チームが活動するゲームを選択してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="teamMemo"><i class="fas fa-file-alt"></i> 詳細メモ（任意）</label>
+                                <textarea id="teamMemo" v-model="teamMemo" placeholder="詳細メモを入力"></textarea>
+                                <small class="helper-text">チームの詳細や目的などを自由に記入できます。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="startDate"><i class="fas fa-calendar-plus"></i> 開始日<span style="color:red;"> *必須</span></label>
+                                <input id="startDate" v-model="startDate" type="date">
+                                <small class="helper-text">チーム活動の開始日を選択してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="startTime"><i class="fas fa-clock"></i> 開始時間<span style="color:red;"> *必須</span></label>
+                                <input id="startTime" v-model="startTime" type="time">
+                                <small class="helper-text">チーム活動の開始時間を選択してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="endDate"><i class="fas fa-calendar-minus"></i> 終了日<span style="color:red;"> *必須</span></label>
+                                <input id="endDate" v-model="endDate" type="date">
+                                <small class="helper-text">チーム活動の終了日を選択してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="endTime"><i class="fas fa-clock"></i> 終了時間<span style="color:red;"> *必須</span></label>
+                                <input id="endTime" v-model="endTime" type="time">
+                                <small class="helper-text">チーム活動の終了時間を選択してください。</small>
+                            </div>
+                            <div class="input-group">
+                                <label>開催場所<span style="color:red;"> *必須</span></label>
+                                  <small class="helper-text">地図をクリックしてチームの開催場所を選択してください。</small>
+                                <div id="create-team-map"></div>
+                            
+                            </div>
+                            <button @click="createTeam"><i class="fas fa-plus-circle"></i> チームを作成</button>
+                        </div>
+                    </div>
+                </div>
+            `
+        });
+
+        // チーム詳細モーダル内の追加機能
+
+        appVue.mount('#app');
+    </script>
+</body>
+</html>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+        /* リセット */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 全体のスタイル */
+        body {
+    background-color: #f0f2f5;
+     font-family: "DotGothic16", sans-serif;
+    color: #000000;
+    line-height: 1.6;
+}
+
+.dotgothic16-regular {
+  font-family: "DotGothic16", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+        /* ナビゲーションバー */
+        nav {
+            background-color: #ffffff;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        nav .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: #FF9500;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        nav .logo:hover {
+            color: #FF9500;
+        }
+
+        nav .nav-links button {
+            background: none;
+            border: none;
+            color: #FF9500;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 20px;
+            transition: color 0.3s, transform 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+        nav .nav-links button i {
+            margin-right: 8px;
+        }
+
+        nav .nav-links button:hover {
+            color: #FF9500;
+            transform: scale(1.05);
+        }
+
+        /* ヘッダー */
+        header {
+            background-color: #ffffff;
+            padding: 60px 30px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 48px;
+            font-weight: 800;
+            color: #FF9500;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* メインコンテンツ */
+        #app {
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 0 30px;
+            color: #000000
+        }
+
+        /* ボタン */
+        button {
+             background-color: #FF9500;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 12px 0;
+            transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            background-color: #FF9500;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        button i {
+            margin-right: 10px;
+        }
+
+        /* 入力フィールド */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 25px;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .input-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333333;
+            font-size: 16px;
+        }
+
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 16px 24px;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #ffffff;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus,
+        .input-group select:focus {
+            border-color: #1e90ff;
+            box-shadow: 0 0 8px rgba(30, 144, 255, 0.3);
+            outline: none;
+        }
+
+        .input-group .helper-text {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #888888;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* チームリスト */
+        .team-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .team-item {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: box-shadow 0.3s, transform 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .team-item:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }
+
+        .h3 {
+            margin-top: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #000000;
+            transition: color 0.3s;
+        }
+
+        .h3:hover {
+            color: #000000;
+        }
+
+        .team-item p {
+            margin: 12px 0;
+            color: #555555;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* ゲームリスト */
+        .game-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .game-item {
+            background-color: #e0e0e0;
+            padding: 18px 24px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            color: #333333;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out, background-color 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+            flex: 1 1 120px;
+        }
+
+        .game-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: skewX(-45deg);
+            transition: left 0.5s;
+        }
+
+        .game-item:hover::before {
+            left: 100%;
+        }
+
+        .game-item:hover {
+            background-color: #c0c0c0;
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        /* モーダル */
+        .modal {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 40px;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 16px;
+            position: relative;
+            animation: slideDown 0.5s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .close-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #aaaaaa;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-button:hover {
+            color: #000000;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* その他のスタイル */
+        .joined-message {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 25px;
+            display: flex;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .joined-message span {
+            margin-left: 12px;
+        }
+
+        .member-introductions {
+            margin-top: 25px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .member-introductions li {
+            list-style: none;
+            padding: 18px;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+
+        .member-introductions li:hover {
+            background-color: #f5f5f5;
+        }
+
+        .member-introductions strong {
+            display: block;
+            font-size: 20px;
+            color: #333333;
+        }
+
+        /* メッセージセクション */
+        .messages {
+            margin-top: 25px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 25px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #000000;
+        }
+
+        .message-list {
+            max-height: 350px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 15px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .message {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .message .sender {
+            font-weight: 600;
+            color: #1e90ff;
+            margin-right: 12px;
+            min-width: 90px;
+        }
+
+        .message .content {
+            background-color: #f1f0f0;
+            padding: 10px 16px;
+            border-radius: 8px;
+            max-width: 75%;
+            word-wrap: break-word;
+            transition: background-color 0.3s;
+        }
+
+        .message .content:hover {
+            background-color: #e2e2e2;
+        }
+
+        .message-input {
+            display: flex;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .message-input input[type="text"] {
+            flex: 1;
+            margin-right: 12px;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            padding: 12px 18px;
+            font-size: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .message-input input[type="text"]:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+            outline: none;
+        }
+
+        .message-input button {
+            background-color: #28a745;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .message-input button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        /* マップ */
+        #main-map {
+            height: 500px;
+            margin-top: 30px;
+            border-radius: 16px;
+            overflow: hidden;
+            animation: fadeIn 1s ease-out;
+        }
+
+        #create-team-map {
+            height: 400px;
+            margin-top: 25px;
+            border-radius: 16px;
+            overflow: hidden;
+            animation: fadeIn 1s ease-out;
+        }
+
+        /* プロフィールカード */
+        .profile-card {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .profile-card h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: #1e90ff;
+        }
+
+        .profile-card p {
+            font-size: 18px;
+            color: #555555;
+            line-height: 1.8;
+        }
+
+        /* レスポンシブデザイン */
+        @media screen and (max-width: 768px) {
+            nav .logo {
+                font-size: 24px;
+            }
+
+            nav .nav-links button {
+                font-size: 14px;
+                margin-left: 12px;
+            }
+
+            header h1 {
+                font-size: 36px;
+            }
+
+            .modal-content {
+                padding: 25px;
+            }
+
+            .team-item h3 {
+                font-size: 20px;
+            }
+
+            .team-item p {
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px 18px;
+            }
+
+            .message .sender {
+                font-size: 14px;
+                min-width: 70px;
+            }
+
+            .message .content {
+                font-size: 14px;
+                max-width: 80%;
+            }
+
+            .h3 {
+                font-size: 20px;
+                color: #000000;
+            }
+
+            .input-group label {
+                font-size: 14px;
+            }
+
+            .input-group input,
+            .input-group textarea,
+            .input-group select {
+                font-size: 14px;
+                padding: 10px 16px;
+            }
+
+            .game-list {
+                justify-content: flex-start;
+            }
+
+            .game-item {
+                flex: 1 1 100px;
+            }
+        }
+
+        /* タイマースタイル */
+        .timer {
+            font-size: 20px;
+            color: #ff4500;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        /* レビューセクション */
+        .reviews {
+            margin-top: 25px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 25px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .reviews h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #1e90ff;
+        }
+
+        .review-list {
+            max-height: 350px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 15px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .review {
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .review strong {
+            color: #1e90ff;
+            font-size: 16px;
+        }
+
+        .review p {
+            margin: 6px 0;
+            font-size: 16px;
+            color: #555555;
+        }
+
+        /* プロフィールグラフ */
+        .profile-graph {
+            margin-top: 25px;
+        }
+
+        /* 異世界転生風ステータス */
+        .status-display {
+            background-color: #f9f9f9;
+            padding: 25px;
+            border-radius: 16px;
+            margin-top: 25px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #333333;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .status-display h3 {
+            margin-bottom: 15px;
+            font-size: 26px;
+            color: #000000;
+        }
+
+        .status-display p {
+            line-height: 1.8;
+            font-size: 18px;
+        }
+
+        /* 他のユーザーのプロフィール表示 */
+        .other-profiles {
+            margin-top: 25px;
+        }
+
+        .other-profile-card {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            animation: fadeIn 1s ease-out;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .other-profile-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .other-profile-card h3 {
+            font-size: 22px;
+            color: #1e90ff;
+            margin-bottom: 12px;
+        }
+
+        .other-profile-card p {
+            font-size: 16px;
+            color: #555555;
+        }
+
+        /* ビューナビゲーションボタンのスタイル */
+        .view-buttons {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 12px 30px;
+            z-index: 1000;
+        }
+
+        .view-buttons button {
+            background-color: #FF9500;
+            color: #ffffff;
+            border: none;
+            border-radius: 25px;
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+        .view-buttons button:hover {
+            background-color: #FF9500;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+        }
+
+        .view-buttons button.active {
+            background-color: #FF9500;
+        }
+
+        .view-buttons button i {
+            margin-right: 6px;
+        }
+        /* モバイル用のスタイル */
+@media screen and (max-width: 600px) {
+    body {
+        font-size: 14px;
+    }
+
+    nav {
+        padding: 10px 15px;
+    }
+
+    nav .logo {
+        font-size: 20px;
+    }
+
+    nav .nav-links button {
+        font-size: 12px;
+        margin-left: 10px;
+    }
+
+    header {
+        padding: 40px 15px;
+    }
+
+    header h1 {
+        font-size: 30px;
+    }
+
+    #app {
+        padding: 0 15px;
+    }
+
+    button {
+        padding: 10px 18px;
+        font-size: 14px;
+    }
+
+    .input-group input,
+    .input-group textarea,
+    .input-group select {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    .input-group label {
+        font-size: 14px;
+    }
+
+    .team-list {
+        grid-template-columns: 1fr;
+    }
+
+    .team-item {
+        padding: 15px;
+    }
+
+    .team-item h3 {
+        font-size: 20px;
+        color: #000000
+    }
+
+    .team-item p {
+        font-size: 14px;
+    }
+
+    .game-item {
+        flex: 1 1 80px;
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    .modal-content {
+        padding: 20px;
+    }
+
+    .message-input input[type="text"] {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .h3{
+        font-size: 18px;
+        color: #000000;
+    }
+
+    .message .sender,
+    .message .content {
+        font-size: 14px;
+    }
+
+    .message .content {
+        max-width: 90%;
+    }
+
+    .view-buttons {
+        padding: 10px 20px;
+    }
+
+    .view-buttons button {
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+
+    .profile-card h2 {
+        font-size: 22px;
+    }
+
+    .profile-card p {
+        font-size: 16px;
+    }
+
+    .other-profile-card h3 {
+        font-size: 18px;
+    }
+
+    .other-profile-card p {
+        font-size: 14px;
+    }
+
+    .h3 {
+        font-size: 22px;
+        color: #000000
+    }
+
+    .status-display p {
+        font-size: 16px;
+    }
+       .view-buttons {
+        padding: 8px 15px;
+        flex-direction: column;
+        bottom: 20px;
+        width: 90%;
+        left: 5%;
+        transform: none;
+    }
+
+    .view-buttons button {
+        padding: 10px 15px;
+        font-size: 30px;
+        margin: 6px 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .view-buttons button i {
+        margin-right: 4px;
+    }
+
+    .view-buttons button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+}
+</style>
