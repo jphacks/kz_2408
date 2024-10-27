@@ -81,13 +81,7 @@ https://anime-create.com/hack/gameconnect.html
 ## 開発技術
 *注意
 デモアプリ並び実際の発表時にはフロントエンドの
-jphack.htmlのみで動作しfirebaseの設定を除き２日間のみで
-完全に０から開発した。
-
-高速開発を実現する為、外部ライブラリHTMLのみを用い
-ライブラリも全てCDNの読み込みのみで完結した
-加えて、デザインcssもhtmlの１つのファイルで完結した.
-
+jphack.htmlのみで動作する
 以下はデモ発表時に使用したjphack.htmlについて説明する
 
 
